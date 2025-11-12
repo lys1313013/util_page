@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dify Messages 到 OpenAI 参数转换器</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .content {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 20px;
+            gap: 20px;
+        }
+        
+        .panel {
+            flex: 1;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .panel-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #444;
+        }
+        
+        .btn {
+            background: #6e8efb;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #5a7dfa;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 400px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            resize: vertical;
+            background-color: #f9f9f9;
+        }
+        
+        .example {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #f0f4ff;
+            border-radius: 5px;
+            border-left: 4px solid #6e8efb;
+        }
+        
+        .example-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        .example-content {
+            font-size: 0.85rem;
+            color: #666;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .instructions {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        
+        .instructions h3 {
+            margin-bottom: 15px;
+            color: #444;
+        }
+        
+        .instructions ol {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 10px;
+        }
+        
+        .message-type {
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: #666;
+            display: flex;
+            align-items: center;
+        }
+        
+        .message-type span {
+            margin-right: 10px;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 0.75rem;
+        }
+        
+        .user-msg {
+            background-color: #e1f0ff;
+            color: #0066cc;
+        }
+        
+        .assistant-msg {
+            background-color: #f0f7ff;
+            color: #009900;
+        }
+        
+        .tool-msg {
+            background-color: #fff0e6;
+            color: #cc6600;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+            
+            textarea {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Dify Messages 到 OpenAI 参数转换器</h1>
+            <p class="subtitle">将 Dify messages 表中的 message 数据转换为 OpenAI API 标准参数格式（支持 tool_calls）</p>
+        </header>
+        
+        <div class="content">
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">输入 Dify Messages 数据</div>
+                </div>
+                <textarea id="difyInput" placeholder="在此粘贴 Dify Messages 数据..."></textarea>
+            </div>
+            
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">转换后的 OpenAI 参数</div>
+                    <button id="copyOutput" class="btn">复制结果</button>
+                </div>
+                <textarea id="openaiOutput" readonly placeholder="转换结果将显示在这里..."></textarea>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h3>使用说明</h3>
+            <ol>
+                <li>在左侧输入框中粘贴 Dify Messages 数据（JSON 格式）</li>
+                <li>转换将自动进行，结果会显示在右侧</li>
+                <li>点击"复制结果"按钮将转换后的 OpenAI 参数复制到剪贴板</li>
+                <li>支持包含 tool_calls 的消息格式转换</li>
+            </ol>
+            
+            <div class="message-type">
+                <span class="user-msg">user</span>
+                <span class="assistant-msg">assistant</span>
+                <span class="tool-msg">tool</span>
+                消息类型标识
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const difyInput = document.getElementById('difyInput');
+            const openaiOutput = document.getElementById('openaiOutput');
+            const copyOutputBtn = document.getElementById('copyOutput');
+            
+            // 复制结果
+            copyOutputBtn.addEventListener('click', function() {
+                openaiOutput.select();
+                document.execCommand('copy');
+                copyOutputBtn.textContent = '已复制!';
+                setTimeout(() => {
+                    copyOutputBtn.textContent = '复制结果';
+                }, 2000);
+            });
+            
+            // 转换函数
+            function convertToOpenAI() {
+                try {
+                    const difyMessages = JSON.parse(difyInput.value);
+                    
+                    if (!Array.isArray(difyMessages)) {
+                        throw new Error('输入必须是数组格式');
+                    }
+                    
+                    const openaiMessages = [];
+                    let lastToolCallId = null;
+                    
+                    for (const message of difyMessages) {
+                        if (!message.role) {
+                            throw new Error('每个消息必须包含 role 字段');
+                        }
+                        
+                        // 处理 tool 角色消息
+                        if (message.role === 'tool') {
+                            // 尝试从上一个 assistant 消息获取 tool_call_id
+                            if (lastToolCallId) {
+                                openaiMessages.push({
+                                    role: 'tool',
+                                    tool_call_id: lastToolCallId,
+                                    content: message.text || ''
+                                });
+                                lastToolCallId = null; // 重置
+                            } else {
+                                // 如果没有找到 tool_call_id，则创建一个默认的
+                                openaiMessages.push({
+                                    role: 'tool',
+                                    tool_call_id: 'unknown_tool_call_id',
+                                    content: message.text || ''
+                                });
+                            }
+                            continue;
+                        }
+                        
+                        // 处理 assistant 角色消息
+                        if (message.role === 'assistant' && message.tool_calls && message.tool_calls.length > 0) {
+                            const openaiMessage = {
+                                role: 'assistant'
+                            };
+                            
+                            // 如果有 text 内容，添加到 content
+                            if (message.text) {
+                                openaiMessage.content = message.text;
+                            }
+                            
+                            // 处理 tool_calls
+                            openaiMessage.tool_calls = message.tool_calls.map(toolCall => {
+                                // 保存最后一个 tool_call_id 供后续 tool 消息使用
+                                lastToolCallId = toolCall.id;
+                                
+                                return {
+                                    id: toolCall.id,
+                                    type: toolCall.type || 'function',
+                                    function: {
+                                        name: toolCall.function.name,
+                                        arguments: toolCall.function.arguments
+                                    }
+                                };
+                            });
+                            
+                            openaiMessages.push(openaiMessage);
+                            continue;
+                        }
+                        
+                        // 处理普通消息 (user 或没有 tool_calls 的 assistant)
+                        openaiMessages.push({
+                            role: message.role,
+                            content: message.text || ''
+                        });
+                    }
+                    
+                    const result = {
+                        messages: openaiMessages
+                    };
+                    
+                    openaiOutput.value = JSON.stringify(result, null, 2);
+                } catch (error) {
+                    openaiOutput.value = `错误: ${error.message}`;
+                }
+            }
+            
+            // 监听输入变化
+            difyInput.addEventListener('input', convertToOpenAI);
+            
+            // 初始转换
+            convertToOpenAI();
+        });
+    </script>
+</body>
+</html>
