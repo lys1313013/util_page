@@ -299,6 +299,9 @@
                 <button id="format-btn" class="primary-btn">
                     <i>🔄</i> 格式化JSON
                 </button>
+                <button id="unicode-btn" class="secondary-btn">
+                    <i>🔡</i> Unicode转UTF-8
+                </button>
                 <button id="clear-btn" class="secondary-btn">
                     <i>🗑️</i> 清空
                 </button>
@@ -346,6 +349,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         const jsonInput = document.getElementById('json-input');
         const formatBtn = document.getElementById('format-btn');
+        const unicodeBtn = document.getElementById('unicode-btn');
         const clearBtn = document.getElementById('clear-btn');
         const exampleBtn = document.getElementById('example-btn');
         const collapseAllBtn = document.getElementById('collapse-all-btn');
@@ -421,6 +425,7 @@
         collapseAllBtn.addEventListener('click', collapseAll);
         expandAllBtn.addEventListener('click', expandAll);
         copyBtn.addEventListener('click', copyJson);
+        unicodeBtn.addEventListener('click', decodeUnicodeText);
 
         // 更新字符和行数统计
         function updateCharCount() {
@@ -488,6 +493,36 @@
             jsonTree.innerHTML = '';
             const tree = createNode('', obj, true);
             jsonTree.appendChild(tree);
+        }
+
+        // 将文本中的 Unicode 编码转换为实际字符
+        function decodeUnicodeText() {
+            const text = jsonInput.value;
+            if (!text.trim()) {
+                showError('请输入需要转换的文本或JSON');
+                return;
+            }
+            const decoded = decodeUnicodeEscapes(text);
+            jsonInput.value = decoded;
+            errorMessage.style.display = 'none';
+            updateCharCount();
+        }
+
+        // 支持 \uXXXX、&#xXXXX;、&#DDDD; 三种形式
+        function decodeUnicodeEscapes(s) {
+            let out = s.replace(/\\u([0-9a-fA-F]{4})/g, function(_, hex) {
+                const code = parseInt(hex, 16);
+                return String.fromCharCode(code);
+            });
+            out = out.replace(/&#x([0-9a-fA-F]+);/gi, function(_, hex) {
+                const codePoint = parseInt(hex, 16);
+                return String.fromCodePoint(codePoint);
+            });
+            out = out.replace(/&#([0-9]+);/g, function(_, dec) {
+                const codePoint = parseInt(dec, 10);
+                return String.fromCodePoint(codePoint);
+            });
+            return out;
         }
 
         // 创建节点
