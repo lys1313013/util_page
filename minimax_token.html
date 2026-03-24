@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiniMax Token 使用情况</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #FFFFFF;
+            min-height: 100vh;
+            color: #0F172A;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 80px 24px 120px;
+        }
+
+        header {
+            margin-bottom: 64px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: #0F172A;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            font-size: 15px;
+            color: #64748B;
+            font-weight: 400;
+        }
+
+        .section {
+            margin-bottom: 48px;
+        }
+
+        .section-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #94A3B8;
+            margin-bottom: 16px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        .token-input {
+            width: 100%;
+            padding: 14px 44px 14px 16px;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            background: #FAFAFA;
+            color: #0F172A;
+        }
+
+        .token-input:focus {
+            outline: none;
+            border-color: #3B82F6;
+            background: #FFFFFF;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .token-input::placeholder {
+            color: #CBD5E1;
+        }
+
+        .toggle-btn {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .toggle-btn svg {
+            width: 16px;
+            height: 16px;
+            stroke: #94A3B8;
+            stroke-width: 1.5;
+            fill: none;
+            transition: stroke 0.2s;
+        }
+
+        .toggle-btn:hover svg {
+            stroke: #64748B;
+        }
+
+        .toggle-btn .eye-off {
+            display: none;
+        }
+
+        .toggle-btn.active .eye-on {
+            display: none;
+        }
+
+        .toggle-btn.active .eye-off {
+            display: block;
+        }
+
+        .btn {
+            padding: 14px 24px;
+            background: #0F172A;
+            color: #FFFFFF;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            background: #1E293B;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .query-btn {
+            width: 100%;
+            padding: 16px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 15px;
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #FFFFFF;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .results-section {
+            display: none;
+        }
+
+        .results-section.active {
+            display: block;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #F1F5F9;
+        }
+
+        .results-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #0F172A;
+        }
+
+        .results-time {
+            font-size: 13px;
+            color: #94A3B8;
+        }
+
+        .model-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            background: #F1F5F9;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .model-item {
+            background: #FFFFFF;
+            padding: 24px;
+            transition: background 0.2s;
+        }
+
+        .model-item:first-child {
+            border-radius: 12px 12px 0 0;
+        }
+
+        .model-item:last-child {
+            border-radius: 0 0 12px 12px;
+        }
+
+        .model-item:only-child {
+            border-radius: 12px;
+        }
+
+        .model-item:hover {
+            background: #FAFBFC;
+        }
+
+        .model-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .model-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0F172A;
+        }
+
+        .model-status {
+            font-size: 12px;
+            font-weight: 500;
+            padding: 4px 10px;
+            border-radius: 4px;
+            background: #F1F5F9;
+            color: #64748B;
+        }
+
+        .model-status.active {
+            background: #DCFCE7;
+            color: #16A34A;
+        }
+
+        .progress-section {
+            margin-bottom: 0;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 10px;
+        }
+
+        .progress-label {
+            font-size: 13px;
+            color: #64748B;
+        }
+
+        .progress-meta {
+            display: flex;
+            gap: 16px;
+            align-items: baseline;
+        }
+
+        .progress-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #0F172A;
+        }
+
+        .progress-time {
+            font-size: 13px;
+            color: #94A3B8;
+        }
+
+        .progress-time svg {
+            width: 12px;
+            height: 12px;
+            stroke: currentColor;
+            stroke-width: 1.5;
+            fill: none;
+            vertical-align: -1px;
+            margin-right: 4px;
+        }
+
+        .progress-bar-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 6px;
+            background: #F1F5F9;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-bar-wrapper .progress-value {
+            font-size: 13px;
+            font-weight: 500;
+            color: #64748B;
+            white-space: nowrap;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.8s ease;
+            background: #3B82F6;
+        }
+
+        .progress-fill.low {
+            background: #22C55E;
+        }
+
+        .progress-fill.medium {
+            background: #3B82F6;
+        }
+
+        .progress-fill.high {
+            background: #F59E0B;
+        }
+
+        .progress-fill.critical {
+            background: #EF4444;
+        }
+
+        .error-box {
+            background: #FEF2F2;
+            border: 1px solid #FECACA;
+            color: #DC2626;
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin-top: 24px;
+            display: none;
+            font-size: 14px;
+        }
+
+        .error-box.active {
+            display: block;
+        }
+
+        .json-toggle {
+            width: 100%;
+            background: transparent;
+            border: 1px solid #E2E8F0;
+            padding: 14px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #64748B;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 32px;
+        }
+
+        .json-toggle:hover {
+            border-color: #CBD5E1;
+            color: #0F172A;
+        }
+
+        .json-content {
+            margin-top: 16px;
+            background: #0F172A;
+            color: #E2E8F0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.7;
+            max-height: 320px;
+            overflow: auto;
+            display: none;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .json-content.active {
+            display: block;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(120%);
+            background: #0F172A;
+            color: #FFFFFF;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                padding: 48px 16px 80px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .input-row {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .model-item {
+                padding: 20px;
+            }
+
+            .progress-bar-wrapper {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+            }
+
+            .progress-bar-wrapper .progress-value {
+                text-align: right;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>MiniMax Token</h1>
+            <p class="subtitle">API 配额查询</p>
+        </header>
+
+        <div class="section">
+            <div class="section-label">认证</div>
+            <div class="input-row">
+                <div class="input-wrapper">
+                    <input type="password" id="token-input" class="token-input" placeholder="输入 MiniMax API Token">
+                    <button class="toggle-btn" id="toggle-btn" type="button">
+                        <svg class="eye-on" viewBox="0 0 24 24">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        <svg class="eye-off" viewBox="0 0 24 24">
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                            <line x1="1" y1="1" x2="23" y2="23"/>
+                        </svg>
+                    </button>
+                </div>
+                <button class="btn" id="save-btn">保存</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <button class="btn query-btn" id="query-btn">
+                <span class="spinner" id="spinner"></span>
+                <span id="btn-text">查询配额</span>
+            </button>
+        </div>
+
+        <div class="error-box" id="error-box"></div>
+
+        <div class="results-section" id="results-section">
+            <div class="results-header">
+                <h2 class="results-title">查询结果</h2>
+                <span class="results-time" id="results-time"></span>
+            </div>
+            <div class="model-list" id="model-list"></div>
+            <button class="json-toggle" id="json-toggle">
+                <span id="json-label">查看原始数据</span>
+            </button>
+            <div class="json-content" id="json-content"></div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const API_URL = 'https://www.minimaxi.com/v1/api/openplatform/coding_plan/remains';
+        const TOKEN_KEY = 'minimax_token';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const tokenInput = document.getElementById('token-input');
+            const saveBtn = document.getElementById('save-btn');
+            const queryBtn = document.getElementById('query-btn');
+            const btnText = document.getElementById('btn-text');
+            const spinner = document.getElementById('spinner');
+            const resultsSection = document.getElementById('results-section');
+            const modelList = document.getElementById('model-list');
+            const resultsTime = document.getElementById('results-time');
+            const errorBox = document.getElementById('error-box');
+            const jsonToggle = document.getElementById('json-toggle');
+            const jsonContent = document.getElementById('json-content');
+            const jsonLabel = document.getElementById('json-label');
+            const toggleBtn = document.getElementById('toggle-btn');
+            const toast = document.getElementById('toast');
+
+            let autoRefreshInterval = null;
+            const AUTO_REFRESH_INTERVAL = 5 * 60 * 1000;
+
+            function startAutoRefresh() {
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                }
+                autoRefreshInterval = setInterval(() => {
+                    queryUsage();
+                }, AUTO_REFRESH_INTERVAL);
+            }
+
+            const savedToken = localStorage.getItem(TOKEN_KEY);
+            if (savedToken) {
+                tokenInput.value = savedToken;
+                queryUsage();
+            }
+
+            saveBtn.addEventListener('click', function() {
+                const token = tokenInput.value.trim();
+                if (!token) {
+                    showError('请输入 Token');
+                    return;
+                }
+                localStorage.setItem(TOKEN_KEY, token);
+                showToast('已保存');
+            });
+
+            tokenInput.addEventListener('change', function() {
+                const token = tokenInput.value.trim();
+                if (token) {
+                    localStorage.setItem(TOKEN_KEY, token);
+                }
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                    autoRefreshInterval = null;
+                }
+            });
+
+            toggleBtn.addEventListener('click', function() {
+                if (tokenInput.type === 'password') {
+                    tokenInput.type = 'text';
+                    toggleBtn.classList.add('active');
+                } else {
+                    tokenInput.type = 'password';
+                    toggleBtn.classList.remove('active');
+                }
+            });
+
+            queryBtn.addEventListener('click', queryUsage);
+
+            jsonToggle.addEventListener('click', function() {
+                const isActive = jsonContent.classList.toggle('active');
+                jsonLabel.textContent = isActive ? '收起数据' : '查看原始数据';
+            });
+
+            async function queryUsage() {
+                const token = tokenInput.value.trim();
+                if (!token) {
+                    showError('请先输入 Token');
+                    return;
+                }
+
+                setLoading(true);
+                errorBox.classList.remove('active');
+
+                try {
+                    const response = await fetch(API_URL, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    const data = await response.json();
+                    
+                    if (data.base_resp && data.base_resp.status_code !== 0) {
+                        throw new Error(data.base_resp.status_msg || 'API 请求失败');
+                    }
+
+                    displayResults(data);
+                    jsonContent.textContent = JSON.stringify(data, null, 2);
+                    resultsTime.textContent = new Date().toLocaleString('zh-CN');
+                    startAutoRefresh();
+                    
+                } catch (error) {
+                    showError(error.message);
+                    resultsSection.classList.remove('active');
+                } finally {
+                    setLoading(false);
+                }
+            }
+
+            function setLoading(isLoading) {
+                queryBtn.disabled = isLoading;
+                if (isLoading) {
+                    spinner.style.display = 'inline-block';
+                    btnText.textContent = '查询中...';
+                } else {
+                    spinner.style.display = 'none';
+                    btnText.textContent = '查询配额';
+                }
+            }
+
+            function displayResults(data) {
+                resultsSection.classList.add('active');
+                modelList.innerHTML = '';
+
+                const models = data.model_remains || [];
+                
+                if (models.length === 0) {
+                    modelList.innerHTML = '<div class="model-item"><p style="text-align: center; color: #94A3B8;">暂无数据</p></div>';
+                    return;
+                }
+
+                models.forEach(model => {
+                    const total = model.current_interval_total_count || 0;
+                    const remaining = model.current_interval_usage_count || 0;
+                    const used = total - remaining;
+                    const usagePercent = total > 0 ? (used / total * 100).toFixed(1) : '0.0';
+                    const isActive = remaining > 0 && remaining < total;
+                    
+                    const item = document.createElement('div');
+                    item.className = 'model-item';
+                    
+                    item.innerHTML = `
+                        <div class="model-header">
+                            <span class="model-name">${model.model_name || '未知模型'}</span>
+                            <span class="model-status ${isActive ? 'active' : ''}">
+                                ${isActive ? '使用中' : '未使用'}
+                            </span>
+                        </div>
+                        <div class="progress-section">
+                            <div class="progress-header">
+                                <span class="progress-label">使用进度</span>
+                                <span class="progress-time">
+                                    <svg viewBox="0 0 24 24">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <polyline points="12 6 12 12 16 14"/>
+                                    </svg>
+                                    ${formatTime(model.remains_time)}
+                                </span>
+                            </div>
+                            <div class="progress-bar-wrapper">
+                                <div class="progress-bar">
+                                    <div class="progress-fill ${getProgressClass(parseFloat(usagePercent))}" 
+                                         style="width: ${Math.min(usagePercent, 100)}%"></div>
+                                </div>
+                                <span class="progress-value">${remaining}/${total}</span>
+                            </div>
+                        </div>
+                    `;
+                    
+                    modelList.appendChild(item);
+                });
+            }
+
+            function getProgressClass(percent) {
+                if (percent >= 90) return 'critical';
+                if (percent >= 70) return 'high';
+                if (percent >= 30) return 'medium';
+                return 'low';
+            }
+
+            function formatTime(ms) {
+                if (!ms || ms <= 0) return '无限制';
+                
+                const seconds = Math.floor(ms / 1000);
+                const minutes = Math.floor(seconds / 60);
+                const hours = Math.floor(minutes / 60);
+                const days = Math.floor(hours / 24);
+                const months = Math.floor(days / 30);
+
+                if (months > 0) {
+                    const remainingDays = days % 30;
+                    return remainingDays > 0 ? `${months}月${remainingDays}天` : `${months}月`;
+                }
+                if (days > 0) {
+                    const remainingHours = hours % 24;
+                    return remainingHours > 0 ? `${days}天${remainingHours}时` : `${days}天`;
+                }
+                if (hours > 0) {
+                    const remainingMinutes = minutes % 60;
+                    return remainingMinutes > 0 ? `${hours}小时${remainingMinutes}分` : `${hours}小时`;
+                }
+                if (minutes > 0) {
+                    const remainingSeconds = seconds % 60;
+                    return remainingSeconds > 0 ? `${minutes}分${remainingSeconds}秒` : `${minutes}分`;
+                }
+                return `${seconds}秒`;
+            }
+
+            function showError(message) {
+                errorBox.textContent = message;
+                errorBox.classList.add('active');
+            }
+
+            function showToast(message) {
+                toast.textContent = message;
+                toast.classList.add('show');
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 2000);
+            }
+        });
+    </script>
+</body>
+</html>
