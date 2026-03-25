@@ -264,7 +264,7 @@
     require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' }});
     require(['vs/editor/editor.main'], function() {
         window.editor = monaco.editor.create(document.getElementById('editor-container'), {
-            value: '{\n    "image": "openclaw:local",\n    "features": [\n        "VS Code 同款原生折叠",\n        "语法高亮支持",\n        "光标悬停即可出现折叠按钮"\n    ]\n}',
+            value: '',
             language: 'json',
             theme: 'vs-dark', 
             automaticLayout: true,
