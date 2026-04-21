@@ -8,25 +8,28 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
     <style>
         :root {
-            --primary: #3b82f6;
-            --primary-hover: #2563eb;
-            --bg: #f8fafc;
+            --primary: #171717;
+            --primary-hover: #262626;
+            --primary-foreground: #ffffff;
+            --bg: #f5f5f5;
             --card-bg: #ffffff;
-            --text: #1e293b;
-            --text-light: #64748b;
-            --border: #e2e8f0;
+            --text: #171717;
+            --text-light: #737373;
+            --border: #e5e5e5;
             --error: #ef4444;
             --success: #10b981;
         }
 
         /* 深色模式变量 */
         body.dark-mode {
-            --primary: #3b82f6;
-            --bg: #0f172a;
-            --card-bg: #1e293b;
-            --text: #f8fafc;
-            --text-light: #94a3b8;
-            --border: #334155;
+            --primary: #262626;
+            --primary-hover: #333333;
+            --primary-foreground: #ffffff;
+            --bg: #000000;
+            --card-bg: #181818;
+            --text: #f5f5f5;
+            --text-light: #a3a3a3;
+            --border: #333333;
         }
 
         * {
@@ -60,7 +63,7 @@
         .logo {
             font-size: 1.25rem;
             font-weight: 700;
-            color: var(--primary);
+            color: var(--text);
             display: flex;
             align-items: center;
             gap: 8px;
@@ -104,13 +107,8 @@
             background: var(--border);
         }
 
-        .tool-btn.primary {
-            background: var(--primary);
-            color: white;
-        }
-
         .tool-btn.primary:hover {
-            background: var(--primary-hover);
+            background: var(--border);
         }
 
         .workspace {

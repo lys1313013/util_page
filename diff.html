@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文档比对工具 - 沉浸式单窗口</title>
+    <!-- 引入 Monaco Editor -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+    <style>
+        :root {
+            --primary: #171717;
+            --primary-hover: #262626;
+            --primary-foreground: #ffffff;
+            --bg: #f5f5f5;
+            --card-bg: #ffffff;
+            --text: #171717;
+            --text-light: #737373;
+            --border: #e5e5e5;
+            --error: #ef4444;
+            --success: #10b981;
+        }
+
+        /* 深色模式变量 */
+        body.dark-mode {
+            --primary: #262626;
+            --primary-hover: #333333;
+            --primary-foreground: #ffffff;
+            --bg: #000000;
+            --card-bg: #181818;
+            --text: #f5f5f5;
+            --text-light: #a3a3a3;
+            --border: #333333;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        header {
+            background: var(--card-bg);
+            padding: 12px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        .logo {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .main-container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 220px;
+            background: var(--card-bg);
+            border-right: 1px solid var(--border);
+            padding: 20px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            overflow-y: auto;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        .tool-btn {
+            width: 100%;
+            padding: 10px 16px;
+            border: 1px solid transparent;
+            border-radius: 6px;
+            background: transparent;
+            color: var(--text);
+            text-align: left;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .tool-btn:hover {
+            background: var(--border);
+        }
+
+        .tool-btn.primary:hover {
+            background: var(--border);
+        }
+
+        .workspace {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            gap: 16px;
+            background: var(--bg);
+            overflow: hidden;
+        }
+
+        .editor-wrapper {
+            flex: 1;
+            position: relative;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        .diff-header {
+            display: flex;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        .diff-title {
+            flex: 1;
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-light);
+            text-align: center;
+        }
+
+        .diff-title:first-child {
+            border-right: 1px solid var(--border);
+        }
+
+        /* Monaco Editor 容器 */
+        #editor-container {
+            flex: 1;
+            width: 100%;
+        }
+
+        .status-bar {
+            padding: 8px 16px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: var(--text-light);
+            background: var(--card-bg);
+            z-index: 11;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            background: #1e293b;
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateY(-100px);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+        }
+
+        @media (max-width: 768px) {
+            .main-container { flex-direction: column; }
+            .sidebar { width: 100%; flex-direction: row; flex-wrap: wrap; padding: 10px; border-right: none; border-bottom: 1px solid var(--border); }
+            .tool-btn { width: auto; flex: 1 1 calc(33% - 10px); text-align: center; justify-content: center; }
+            .sidebar hr { display: none; }
+            .diff-header { display: none; }
+        }
+    </style>
+</head>
+<body class="dark-mode">
+
+<header>
+    <div class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+        </svg>
+        <span>文档比对工具</span>
+    </div>
+    <div style="display: flex; gap: 12px;">
+        <button class="tool-btn" onclick="toggleTheme()" style="width: auto;">🌗 切换主题</button>
+        <button class="tool-btn" onclick="clearContent()" style="width: auto;">清空全部</button>
+    </div>
+</header>
+
+<div class="main-container">
+    <div class="sidebar">
+        <button class="tool-btn primary" onclick="swapContent()">交换左右内容</button>
+        <button class="tool-btn primary" onclick="toggleView()">切换视图 (并排/行内)</button>
+        <hr style="margin: 8px 0; border: none; border-top: 1px solid var(--border);">
+        <button class="tool-btn" onclick="formatJSON('original')">左侧 JSON 格式化</button>
+        <button class="tool-btn" onclick="formatJSON('modified')">右侧 JSON 格式化</button>
+        <hr style="margin: 8px 0; border: none; border-top: 1px solid var(--border);">
+        <button class="tool-btn" onclick="toggleIgnoreTrimWhitespace()" id="btn-ignore-space">✅ 忽略首尾空格</button>
+    </div>
+
+    <div class="workspace">
+        <div class="editor-wrapper">
+            <div class="diff-header" id="diff-header">
+                <div class="diff-title">原始文档 (Original)</div>
+                <div class="diff-title">修改后文档 (Modified)</div>
+            </div>
+            <div id="editor-container"></div>
+            <div class="status-bar">
+                <div id="stats">就绪</div>
+                <div>支持拖拽文件到左侧或右侧区域读取内容</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="toast">操作成功</div>
+
+<script>
+    let isDarkMode = true;
+    let diffEditor = null;
+    let originalModel = null;
+    let modifiedModel = null;
+    let isSideBySide = true;
+    let ignoreTrimWhitespace = true;
+
+    // Initialize Monaco Editor
+    require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' }});
+    require(['vs/editor/editor.main'], function() {
+        originalModel = monaco.editor.createModel(
+            "// 请在此处输入或粘贴原始文本\n// 支持 JSON 格式化\n{\n  \"example\": \"data\",\n  \"version\": 1\n}",
+            "plaintext"
+        );
+        modifiedModel = monaco.editor.createModel(
+            "// 请在此处输入或粘贴修改后的文本\n// 支持 JSON 格式化\n{\n  \"example\": \"data_modified\",\n  \"version\": 2,\n  \"new_field\": true\n}",
+            "plaintext"
+        );
+
+        diffEditor = monaco.editor.createDiffEditor(document.getElementById('editor-container'), {
+            theme: 'vs-dark',
+            automaticLayout: true,
+            renderSideBySide: isSideBySide,
+            ignoreTrimWhitespace: ignoreTrimWhitespace,
+            fontSize: 14,
+            fontFamily: "'Fira Code', Consolas, 'Courier New', monospace",
+            minimap: { enabled: false },
+            wordWrap: "on",
+            originalEditable: true // 允许编辑左侧原始内容
+        });
+
+        diffEditor.setModel({
+            original: originalModel,
+            modified: modifiedModel
+        });
+
+        updateStats();
+
+        originalModel.onDidChangeContent(() => updateStats());
+        modifiedModel.onDidChangeContent(() => updateStats());
+    });
+
+    function toggleTheme() {
+        isDarkMode = !isDarkMode;
+        if (isDarkMode) {
+            document.body.classList.add('dark-mode');
+            monaco.editor.setTheme('vs-dark');
+        } else {
+            document.body.classList.remove('dark-mode');
+            monaco.editor.setTheme('vs');
+        }
+    }
+
+    function swapContent() {
+        if (!originalModel || !modifiedModel) return;
+        const originalVal = originalModel.getValue();
+        const modifiedVal = modifiedModel.getValue();
+        originalModel.setValue(modifiedVal);
+        modifiedModel.setValue(originalVal);
+        showToast('内容已交换');
+    }
+
+    function toggleView() {
+        if (!diffEditor) return;
+        isSideBySide = !isSideBySide;
+        diffEditor.updateOptions({
+            renderSideBySide: isSideBySide
+        });
+        
+        // 行内模式下隐藏顶部标题栏以节省空间
+        const diffHeader = document.getElementById('diff-header');
+        if (isSideBySide) {
+            diffHeader.style.display = 'flex';
+        } else {
+            diffHeader.style.display = 'none';
+        }
+        
+        showToast(isSideBySide ? '已切换为并排视图' : '已切换为行内视图');
+    }
+
+    function toggleIgnoreTrimWhitespace() {
+        if (!diffEditor) return;
+        ignoreTrimWhitespace = !ignoreTrimWhitespace;
+        diffEditor.updateOptions({
+            ignoreTrimWhitespace: ignoreTrimWhitespace
+        });
+        
+        const btn = document.getElementById('btn-ignore-space');
+        btn.textContent = ignoreTrimWhitespace ? '✅ 忽略首尾空格' : '❌ 不忽略首尾空格';
+        showToast(ignoreTrimWhitespace ? '开启忽略首尾空格' : '关闭忽略首尾空格');
+    }
+
+    function clearContent() {
+        if (!originalModel || !modifiedModel) return;
+        originalModel.setValue('');
+        modifiedModel.setValue('');
+        showToast('已清空全部内容');
+    }
+
+    function formatJSON(side) {
+        const model = side === 'original' ? originalModel : modifiedModel;
+        if (!model) return;
+        
+        const val = model.getValue().trim();
+        if (!val) {
+            showToast('内容为空');
+            return;
+        }
+        
+        try {
+            const obj = JSON.parse(val);
+            model.setValue(JSON.stringify(obj, null, 4));
+            // 格式化成功后自动将语言设置为 json 获得高亮
+            monaco.editor.setModelLanguage(model, 'json');
+            showToast((side === 'original' ? '左侧' : '右侧') + ' JSON 格式化成功');
+        } catch (e) {
+            showToast('解析 JSON 失败，请检查语法');
+        }
+    }
+
+    function updateStats() {
+        if (!originalModel || !modifiedModel) return;
+        const oLines = originalModel.getLineCount();
+        const mLines = modifiedModel.getLineCount();
+        document.getElementById('stats').textContent = `左侧行数: ${oLines} | 右侧行数: ${mLines}`;
+    }
+
+    function showToast(msg) {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+</script>
+
+</body>
+</html>
