@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Base64 图片双向转换</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 20px;
+            height: 100vh;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            background-color: #f5f5f5;
+        }
+        h2 {
+            text-align: center;
+            margin: 0 0 20px 0;
+            color: #333;
+        }
+        .container {
+            display: flex;
+            flex: 1;
+            gap: 20px;
+            min-height: 0; /* 确保高度可以自适应收缩 */
+        }
+        .box {
+            flex: 1;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        .box-title {
+            margin-bottom: 15px;
+            font-weight: bold;
+            color: #555;
+            text-align: center;
+        }
+        textarea {
+            flex: 1;
+            width: 100%;
+            resize: none;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            outline: none;
+            font-family: monospace;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        textarea:focus {
+            border-color: #007bff;
+        }
+        .image-area {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            overflow: hidden;
+            position: relative;
+            background: #fafafa;
+            transition: all 0.2s;
+        }
+        .image-area:hover, .image-area.dragover {
+            border-color: #007bff;
+            background: #f0f8ff;
+        }
+        img {
+            max-width: 100%;
+            max-height: 100%;
+            display: none;
+            object-fit: contain;
+        }
+        .placeholder {
+            color: #888;
+            text-align: center;
+            pointer-events: none;
+            line-height: 1.6;
+        }
+        input[type="file"] {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Base64 图片双向转换</h2>
+
+    <div class="container">
+        <!-- 左侧：Base64 文本框 -->
+        <div class="box">
+            <div class="box-title">Base64 字符串</div>
+            <textarea id="base64Text" placeholder="在此粘贴 Base64 字符串...&#10;（会自动在右侧显示为图片）"></textarea>
+        </div>
+        
+        <!-- 右侧：图片显示/上传框 -->
+        <div class="box">
+            <div class="box-title">图片预览区</div>
+            <div class="image-area" id="imageArea" onclick="document.getElementById('fileInput').click()">
+                <div class="placeholder" id="placeholder">
+                    点击选择图片<br>或将图片拖拽到此处<br>（会自动在左侧生成 Base64）
+                </div>
+                <img id="preview" alt="图片预览">
+            </div>
+            <input type="file" id="fileInput" accept="image/*">
+        </div>
+    </div>
+
+    <script>
+        const base64Text = document.getElementById('base64Text');
+        const fileInput = document.getElementById('fileInput');
+        const preview = document.getElementById('preview');
+        const placeholder = document.getElementById('placeholder');
+        const imageArea = document.getElementById('imageArea');
+
+        // 1. 监听左侧文本输入 -> 更新右侧图片
+        base64Text.addEventListener('input', () => {
+            const val = base64Text.value.trim();
+            if (val) {
+                // 智能补全 data:image 头
+                let src = val;
+                if (!src.startsWith('data:image')) {
+                    src = 'data:image/png;base64,' + src;
+                }
+                preview.src = src;
+                preview.style.display = 'block';
+                placeholder.style.display = 'none';
+            } else {
+                preview.src = '';
+                preview.style.display = 'none';
+                placeholder.style.display = 'block';
+            }
+        });
+
+        // 2. 处理图片文件 -> 更新左侧文本和右侧图片
+        function handleFile(file) {
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const base64 = e.target.result;
+                    base64Text.value = base64;
+                    preview.src = base64;
+                    preview.style.display = 'block';
+                    placeholder.style.display = 'none';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                alert('请选择有效的图片文件！');
+            }
+        }
+
+        // 监听文件选择
+        fileInput.addEventListener('change', (e) => {
+            handleFile(e.target.files[0]);
+            fileInput.value = ''; // 清空 value 以便下次可以重复选择同一文件
+        });
+
+        // 3. 支持拖拽图片到右侧区域
+        imageArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            imageArea.classList.add('dragover');
+        });
+        
+        imageArea.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            imageArea.classList.remove('dragover');
+        });
+        
+        imageArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            imageArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+    </script>
+</body>
+</html>
